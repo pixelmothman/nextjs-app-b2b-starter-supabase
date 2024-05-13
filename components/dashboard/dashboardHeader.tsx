@@ -10,9 +10,9 @@ export default function DashboardHeader(){
     const router = useRouter()
 
     return (
-        <div className='w-full h-fit flex flex-toe justify-between border-b border-neutral-700'>
-            <div className="w-fit flex items-center justify-center py-[18px] outline-0 focus:ring-2 focus:ring-neutral-800">
-                <span className="font-black text-xl text-neutral-900">
+        <div className='w-full h-fit flex flex-row justify-between px-4 py-4 border-b border-neutral-300'>
+            <div className="w-fit flex items-center justify-center">
+                <span className="font-black text-base text-neutral-900">
                     nextjs-app-b2b-starter-supabase
                 </span>
             </div>
