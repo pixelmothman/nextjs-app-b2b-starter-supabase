@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { validateFormData } from './formValidation';
 import { AuthenticationError, DBError, LogicValidationError, ValidationError } from './customErrorClasses';
 import { handleError } from './errorHandler';
+import { v4 as uuidv4 } from 'uuid';
 
 //---------------------------------------------------------------------
 
@@ -77,10 +78,10 @@ const LoginDataSchema = z.object({
       success: true,
     };
   }
-  //---------------------------------------------------------------------
+//---------------------------------------------------------------------
 
 
-  //---------------------------------------------------------------------
+//---------------------------------------------------------------------
 
 // Server actions related to the personal account
 
@@ -121,6 +122,48 @@ export async function editAccountEmail(prevState: any, formData: FormData) {
   revalidatePath('/', 'layout');
   return {
     success: true,
+  };
+}
+//---------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------
+
+// Server actions related to the personal account
+
+// server action to update the user's email
+const CreateOrgDataSchema = z.object({
+  orgName: z.string().min(3).max(40)
+});
+export async function createOrg(prevState: any, formData: FormData) {
+  try {
+    const supabase = createClient()
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+
+    //get the data from the form
+    const dataFromForm = await validateFormData(formData, CreateOrgDataSchema);
+        
+    //create the organization
+    const { data: orgData, error: createOrgDataError } = await supabase.from('org_table').insert({
+      org_name: dataFromForm.orgName
+    });
+    if (createOrgDataError) {
+      throw new DBError('Failed to create new organization')
+    };
+
+  } catch (e: any) {
+    return handleError(e);
+  }
+
+  revalidatePath('/dashboard', 'layout');
+  return {
+    success: true,
+    successID: uuidv4()
   };
 }
 //---------------------------------------------------------------------
