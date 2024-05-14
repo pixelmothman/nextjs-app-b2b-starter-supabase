@@ -6,6 +6,7 @@ import { useFormState } from "react-dom";
 import { useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 
+
 export default function FormCreateOrg() {
   const [state, formAction] = useFormState(createOrg, '')
   const [orgNameLength, setOrgNameLength] = useState(0)
@@ -13,9 +14,6 @@ export default function FormCreateOrg() {
   useEffect(() => {
     if (state.success === false) {
       toast.error(state.error.message + ' - ' + state.error.code)
-    }
-    if (state.success === true) {
-      toast.success('Organization created successfully.');
     }
   }, [state.success, state.error, state.successID]);
 
@@ -30,7 +28,7 @@ export default function FormCreateOrg() {
               (e) => {
                 setOrgNameLength(e.target.value.length)
               }
-          }className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-md" id="orgName" name="orgName" type="text" min={3} max={40} required />
+          } required type="text" min={3} max={40} autoComplete="off"  className="w-full px-4 py-2 bg-neutral-50 border border-neutral-300 rounded-md" id="orgName" name="orgName"/>
         </div>
         <FormButtonAbstraction buttonText="Create" loadingText="Loading..."/>
         <Toaster/>
