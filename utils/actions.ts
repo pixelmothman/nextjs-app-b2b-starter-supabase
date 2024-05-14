@@ -139,6 +139,7 @@ const CreateOrgDataSchema = z.object({
 });
 export async function createOrg(prevState: any, formData: FormData) {
   const maxRetries = 3;
+  let orgID;
   try {
     let supabase = createClient()
 
@@ -179,18 +180,19 @@ export async function createOrg(prevState: any, formData: FormData) {
 
       addOrgMemberError = currentAddOrgMemberError;
       retryCount++;
-    }
+    };
 
     if (addOrgMemberError) {
       // Attempt to delete the organization if adding the user fails
       await supabase.from('org_table').delete().eq('org_id', orgData[0].org_id);
       throw new DBError('Failed to add user to the organization after multiple attempts. Organization deleted.');
     }
+
+    orgID = orgData[0].org_id
+    revalidatePath('/dashboard', 'layout');
   } catch (e: any) {
     return handleError(e);
   }
-
-  revalidatePath('/dashboard', 'layout');
-  redirect('/dashboard');
+  redirect(`/dashboard/${orgID}`);
 }
 //---------------------------------------------------------------------
