@@ -7,6 +7,8 @@ import { validateFormData } from './formValidation';
 import { AuthenticationError, DBError, LogicValidationError, ValidationError } from './customErrorClasses';
 import { handleError } from './errorHandler';
 import { v4 as uuidv4 } from 'uuid';
+import { createSupaServerClient } from './supabase/superServer';
+import { redirect } from 'next/navigation';
 
 //---------------------------------------------------------------------
 
@@ -136,8 +138,9 @@ const CreateOrgDataSchema = z.object({
   orgName: z.string().min(3).max(40)
 });
 export async function createOrg(prevState: any, formData: FormData) {
+  const maxRetries = 3;
   try {
-    const supabase = createClient()
+    let supabase = createClient()
 
     //check the user exists
     const { data, error } = await supabase.auth.getUser();
@@ -147,23 +150,47 @@ export async function createOrg(prevState: any, formData: FormData) {
 
     //get the data from the form
     const dataFromForm = await validateFormData(formData, CreateOrgDataSchema);
-        
+
+    //delete previous instance of supabase client and start using supabase client with server role now
+    supabase = createSupaServerClient();
+    
     //create the organization
     const { data: orgData, error: createOrgDataError } = await supabase.from('org_table').insert({
       org_name: dataFromForm.orgName
-    });
-    if (createOrgDataError) {
+    }).select()
+    if (createOrgDataError || !orgData || orgData.length === 0) {
       throw new DBError('Failed to create new organization')
     };
 
+    // Add the user to the organization with retries
+    let retryCount = 0;
+    let addOrgMemberError = null;
+    while (retryCount < maxRetries) {
+      const { error: currentAddOrgMemberError } = await supabase.from('org_membership_table').insert({
+        user_id: data.user.id,
+        org_id: orgData[0].org_id,
+        org_membership_status: 'confirmed'
+      });
+
+      if (!currentAddOrgMemberError) {
+        addOrgMemberError = null;
+        break;
+      }
+
+      addOrgMemberError = currentAddOrgMemberError;
+      retryCount++;
+    }
+
+    if (addOrgMemberError) {
+      // Attempt to delete the organization if adding the user fails
+      await supabase.from('org_table').delete().eq('org_id', orgData[0].org_id);
+      throw new DBError('Failed to add user to the organization after multiple attempts. Organization deleted.');
+    }
   } catch (e: any) {
     return handleError(e);
   }
 
   revalidatePath('/dashboard', 'layout');
-  return {
-    success: true,
-    successID: uuidv4()
-  };
+  redirect('/dashboard');
 }
 //---------------------------------------------------------------------
