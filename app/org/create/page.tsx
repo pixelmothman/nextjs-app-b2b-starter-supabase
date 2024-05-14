@@ -1,4 +1,4 @@
-import DashboardHeader from "@/components/dashboard/dashboardHeader";
+import CreateFirstOrgHeader from "@/components/org/createFirstOrgHeader";
 import FormCreateOrg from "@/components/org/formCreateOrg";
 
 export default function CreateOrgPage(){
