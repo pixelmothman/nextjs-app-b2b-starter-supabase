@@ -7,8 +7,8 @@ export default async function AccountPage(){
     const { data, error } = await supabase.auth.getUser()
 
     return (
-        <div className="w-full h-full flex flex-col justify-between gap-4 p-5 rounded-sm bg-white border border-neutral-800 shadow-sm">
-            <div className="flex flex-col gap-2">
+        <div className="w-full h-full flex justify-center mt-64">
+            <div className="w-96 h-fit p-6 bg-neutral-50 shadow-[0px_0px_4px_2px_rgba(0,0,0,0,3)] shadow-neutral-300 rounded-sm">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-bold text-neutral-900">Account</h1>
                 </div>
@@ -21,7 +21,6 @@ export default async function AccountPage(){
                         <FormEditAccount userEmail={data.user?.email}/>
                     )
                 }
-                
             </div>
         </div>
     )
