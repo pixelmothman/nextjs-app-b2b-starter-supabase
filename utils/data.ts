@@ -45,4 +45,41 @@ export async function getOrgs(){
         return handleError(e);
     };
 };
+
+// external - server-side function to get the current org name based on the org id
+export async function getCurrentOrgName(orgId: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient();
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //check the user is part of the org and fetch the org name
+        const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select(`
+        org_name: org_table!org_membership_table_org_id_fkey (org_name)
+        `).eq('org_id', orgId).eq('user_id', user.id)
+        if (orgMembershipDataError) {
+            throw new DBError('Failed to check user membership data');
+        };
+        
+        //if the user is not a member of the org, return
+        if(!orgMembershipData){
+            return new LogicValidationError('User is not a member of the org');
+        };
+        
+        return orgMembershipData[0].org_name;
+    } catch (e: any) {
+        return handleError(e);
+    };
+}
+
 //---------------------------------------------------------------------
