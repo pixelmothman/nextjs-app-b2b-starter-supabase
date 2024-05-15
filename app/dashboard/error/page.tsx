@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 
-export default function TripErrorPage(){
+export default function DashboardErrorPage(){
     const searchParams = useSearchParams();
     const errorMessage = searchParams.get('error_message');
     const errorCode = searchParams.get('error_code');
