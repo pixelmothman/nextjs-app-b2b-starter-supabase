@@ -9,7 +9,7 @@ import { ErrorResponse, handleError } from "./errorHandler";
 //---------------------------------------------------------------------
 // Server-side functions related to orgs
 
-// server-side function to get orgs that the user is part of
+// external - server-side function to get orgs that the user is part of
 export async function getOrgs(){
     //prevents the response from being cached
     noStore();
@@ -26,10 +26,13 @@ export async function getOrgs(){
         //delete previous instance of supabase client and start using supabase client with server role now
         supabase = createSupaServerClient();
 
-        //fetch the orgs that the user is part of
-        const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select().eq('user_id', user.id)
+        //check the user is part of the org and fetch the org name
+        const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select(`
+        org_id,
+        org_name: org_table!org_membership_table_org_id_fkey (org_name)
+        `).eq('user_id', user.id)
         if (orgMembershipDataError) {
-            throw new DBError('Failed to fetch org membership data');
+            throw new DBError('Failed to check user membership data');
         };
         
         //if the user is not a member of any orgs, return
