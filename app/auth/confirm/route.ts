@@ -1,6 +1,5 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
-
 import { createClient } from '@/utils/supabase/server'
 
 export async function GET(request: NextRequest) {
@@ -33,6 +32,8 @@ export async function GET(request: NextRequest) {
 
     // check if the type is 'email' which means the user is confirming their signup email
     if (type === 'email' && data?.user && !error) {
+      // Redirect the user to the organization creation page
+      redirectTo.pathname = '/org/create'
       // Add a query parameter to indicate the email is confirmed
       redirectTo.searchParams.set('email_confirmed', 'true')
     }
@@ -40,6 +41,8 @@ export async function GET(request: NextRequest) {
     // Check if the type is 'email_change'
     if (type === 'email_change' && data?.user && !error && (data.user as any).msg) {
       if ((data.user as any).msg === 'Confirmation link accepted. Please proceed to confirm link sent to the other email') {
+        // Redirect the user to account page
+        redirectTo.pathname = '/account'
         // Add a query parameter to indicate the new email is not confirmed yet
         redirectTo.searchParams.set('new_email_not_confirmed', 'true')
       }
