@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 
 
-export default function FormCreateOrg() {
+export default function FormCreateFirstOrg() {
   const [state, formAction] = useFormState(createOrg, '')
   const [orgNameLength, setOrgNameLength] = useState(0)
 
