@@ -14,7 +14,7 @@ export default async function DashboardLayout( {children}: {children: ReactNode}
     };
 
     return (
-        <div className="w-full h-full flex-col bg-neutral-100 overflow-hidden">
+        <div className="h-full pb-16 bg-neutral-200">
             {children}
         </div>
     )

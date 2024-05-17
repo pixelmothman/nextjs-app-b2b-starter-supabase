@@ -28,7 +28,7 @@ export default async function DashboardLayout( {children, params}: {children: Re
     };
 
     return (
-        <div className="w-full h-full flex-col bg-neutral-100 overflow-hidden">
+        <>
             <div className='w-full h-fit flex flex-row justify-between px-4 py-4 border-b border-neutral-300'>
                 <div className="w-fit flex flex-row gap-2 items-center justify-center">
                     <span className="font-black text-base text-neutral-900">
@@ -45,8 +45,9 @@ export default async function DashboardLayout( {children, params}: {children: Re
                 <MainMenuDD/>
             </div>
             <div className="w-full h-full flex flex-row">
-            {children}
+                <div className='w-56 h-full bg-neutral-200 border-r border-neutral-300'/>
+                {children}
             </div>
-        </div>
+        </>
     )
 };
