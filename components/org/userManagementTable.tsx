@@ -32,8 +32,8 @@ export default function UserManagementTable({orgID, usersInOrg} : {orgID: string
                 usersInTable.map((user: any, idx: number) => {
                     return (
                         <div key={user.userEmail} className="w-full h-fit grid grid-cols-4 py-4 px-4 gap-2 border border-neutral-300">
-                            <div className="w-full h-fit flex flex-row items-center justify-start">
-                                <p className="text-sm font-semibold text-neutral-600">{user.userEmail}</p>
+                            <div className="w-full h-fit flex flex-row items-center justify-start overflow-clip">
+                                <p title={user.userEmail} className="text-sm font-semibold text-neutral-600">{user.userEmail}</p>
                             </div>
                             <div className="w-full h-fit flex flex-row items-center justify-start">
                                 <p className="text-sm font-semibold text-neutral-600">{user.userRole.charAt(0).toUpperCase() + user.userRole.slice(1)}</p>
