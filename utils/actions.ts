@@ -258,7 +258,8 @@ export async function getOrgMembers(prevState: any, formData: FormData){
 // server action to invite user to organization
 const InviteUserToOrgDataSchema = z.object({
   orgID: z.string(),
-  emailFromInvited: z.string().email(),
+  emailOfInvitedUser: z.string().email(),
+  userRoleInOrgState: z.enum(['owner', 'member'])
 });
 
 export async function inviteUserToOrg(prevState: any, formData: FormData){
@@ -285,17 +286,23 @@ export async function inviteUserToOrg(prevState: any, formData: FormData){
       throw new LogicValidationError('User is not part of the org')
     };
 
+    //check if the user calling this function has an owner role in the org
+    const checkIfUserHasOwnerRole =  await isUserOrgRole(dataFromForm.orgID, user.id, 'owner');
+    if(!checkIfUserHasOwnerRole || !('isUserOrgRole' in checkIfUserHasOwnerRole) || checkIfUserHasOwnerRole.isUserOrgRole === false){
+      throw new LogicValidationError('User does not have an owner role in the org')
+    };
+
     //check if person invited is a user of the app
-    const { data: userData, error: userError } = await supabase.from('user_table').select('user_id, user_email').eq('user_email', dataFromForm.emailFromInvited);
+    const { data: userData, error: userError } = await supabase.from('user_table').select('user_id, user_email').eq('user_email', dataFromForm.emailOfInvitedUser);
     if (userError) {
       throw new DBError('Failed to check if user is part of the system')
     };
 
     //if person invited is already a user of the app
     if(userData && userData.length > 0){
-      if (userData[0].user_email === dataFromForm.emailFromInvited) {
+      if (userData[0].user_email === dataFromForm.emailOfInvitedUser) {
         //check if the user is already part of the org
-        const checkIfUserIsPartOfOrgByUserEmail =  await isUserPartOfOrgByUserEmail(dataFromForm.orgID, dataFromForm.emailFromInvited);
+        const checkIfUserIsPartOfOrgByUserEmail =  await isUserPartOfOrgByUserEmail(dataFromForm.orgID, dataFromForm.emailOfInvitedUser);
         if(!checkIfUserIsPartOfOrgByUserEmail || !('isUserPartOfOrg' in checkIfUserIsPartOfOrgByUserEmail) || checkIfUserIsPartOfOrgByUserEmail.isUserPartOfOrg === true){
           throw new LogicValidationError('User is already part of the org')
         }
@@ -304,6 +311,7 @@ export async function inviteUserToOrg(prevState: any, formData: FormData){
           const { error: orgMembershipDataError } = await supabase.from('org_membership_table').insert({
             org_id: dataFromForm.orgID,
             user_id: userData[0].user_id,
+            org_membership_role: dataFromForm.userRoleInOrgState,
             org_membership_status: 'pending',
             invited_by: data.user.id
           });
@@ -317,22 +325,23 @@ export async function inviteUserToOrg(prevState: any, formData: FormData){
     //if person invited is not a user of the app
     if (!userData || userData.length === 0) {
       // Attempt to invite the user to the app
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(dataFromForm.emailFromInvited);
+      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(dataFromForm.emailOfInvitedUser);
       if (inviteError) {
-          throw new DBError('Failed to invite person to the app');
+        throw new DBError('Failed to invite person to the app');
       }
       // Retrieve the new user's data
       const { data: newUser, error: newUserError } = await supabase.from('user_table')
       .select('user_id')
-      .eq('user_email', dataFromForm.emailFromInvited)
+      .eq('user_email', dataFromForm.emailOfInvitedUser)
       .single();
       if (newUserError || !newUser) {
-          throw new DBError('Failed to retrieve newly invited user data');
+        throw new DBError('Failed to retrieve newly invited user data');
       }
       // Add the new user to the org
       const { error: orgAddError } = await supabase.from('org_membership_table').insert({
         org_id: dataFromForm.orgID,
         user_id: newUser.user_id,
+        org_membership_role: dataFromForm.userRoleInOrgState,
         org_membership_status: 'pending',
         invited_by: data.user.id
       });
@@ -347,6 +356,7 @@ export async function inviteUserToOrg(prevState: any, formData: FormData){
   revalidatePath(`/dashboard/${dataFromForm.orgID}`, 'layout');
   return {
     success: true,
+    successID: uuidv4()
   };
 };
 
