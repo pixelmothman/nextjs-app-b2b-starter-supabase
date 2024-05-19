@@ -1,12 +1,17 @@
-import { getUsersInOrg } from "@/utils/data"
+import { useEffect, useState } from "react";
 import EditUserOrgPopover from "./editUserOrgPopover"
-import { redirect } from "next/navigation";
 
-export default async function UserManagementTable({orgID, usersInOrg} : {orgID: string, usersInOrg: {
+export default function UserManagementTable({orgID, usersInOrg} : {orgID: string, usersInOrg: {
     userEmail: any;
     userRole: any;
     userStatus: any;
 }[]}){
+    const [usersInTable, setUsersInTable] = useState<any[]>([]);
+
+    useEffect(() => {
+        setUsersInTable(usersInOrg);
+    }, [usersInOrg]);
+
     return (
         <div className="w-full h-full">
             <div className="w-full h-fit grid grid-cols-4 py-2 px-4 gap-2 bg-neutral-200 border border-neutral-300 rounded-t-md">
@@ -24,7 +29,7 @@ export default async function UserManagementTable({orgID, usersInOrg} : {orgID: 
                 </div>
             </div>
             {
-                usersInOrg.map((user: any, idx: number) => {
+                usersInTable.map((user: any, idx: number) => {
                     return (
                         <div key={user.userEmail} className="w-full h-fit grid grid-cols-4 py-4 px-4 gap-2 border border-neutral-300">
                             <div className="w-full h-fit flex flex-row items-center justify-start">

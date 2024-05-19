@@ -12,9 +12,9 @@ export default function OrgSettingsMenu(){
             {
                 settingsPages.map((page: string) => {
                     return (
-                        <Link href={`/dashboard/${path[2]}/settings/${page.split(' ').join('').toLowerCase()}`} className={`w-full h-fit flex flex-row items-center justify-center px-2 py-1 ${
+                        <Link key={page} href={`/dashboard/${path[2]}/settings/${page.split(' ').join('').toLowerCase()}`} className={`w-full h-fit flex flex-row items-center justify-center px-2 py-2 ${
                             path[4] === page.split(' ').join('').toLowerCase() ? 'bg-neutral-200' : 'bg-neutral-50'
-                        } hover:bg-neutral-200 text-xs font-semibold text-neutral-600 border-2 border-neutral-300 rounded-md cursor-pointer`}>
+                        } hover:bg-neutral-200 text-xs font-semibold text-neutral-600 border-2 border-neutral-300 rounded-t-md cursor-pointer`}>
                         {page}
                         </Link>
                     )
