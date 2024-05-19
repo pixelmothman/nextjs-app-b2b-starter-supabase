@@ -38,7 +38,7 @@ export default function EditUserOrgPopover({orgID, userEmail, userRoleInOrg}: {o
                 <Popover.Trigger asChild>
                     <button
                     className='w-fit h-fit py-1 px-1 bg-neutral-100 shadow-sm shadow-neutral-600 outline-0 rounded-sm focus:ring-2 focus:ring-neutral-800'
-                    aria-label='Edit shopping list item'
+                    aria-label='Edit user from org'
                     >
                         <svg className='fill-neutral-800' xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256"><path d="M144,128a16,16,0,1,1-16-16A16,16,0,0,1,144,128ZM60,112a16,16,0,1,0,16,16A16,16,0,0,0,60,112Zm136,0a16,16,0,1,0,16,16A16,16,0,0,0,196,112Z"></path></svg>
                     </button>
