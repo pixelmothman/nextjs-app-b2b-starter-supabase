@@ -7,8 +7,9 @@ import { getCurrentOrgUserPermissions, getOrgs } from '@/utils/data';
 import CurrentOrgIndicator from '@/components/org/currentOrgIndicator';
 import MainMenuDD from '@/components/dashboard/mainMenuDD';
 import OrgsPopover from '@/components/org/orgsPopover';
+import LeftSideMenu from '@/components/dashboard/leftSideMenu';
 
-export default async function DashboardLayout( {children, params}: {children: ReactNode, params: any} ) {
+export default async function DashboardLayout( {children, params}: {children: ReactNode, params: {orgID: string}} ) {
     const supabase = createClient();
 
     // if the user is not logged in, redirect to the login page
@@ -52,7 +53,9 @@ export default async function DashboardLayout( {children, params}: {children: Re
                 <MainMenuDD/>
             </div>
             <div className="w-full h-full flex flex-row">
-                <div className='w-56 h-full bg-neutral-200 border-r border-neutral-300'/>
+                <div className='w-64 h-full p-4 bg-neutral-200 border-r border-neutral-300'>
+                    <LeftSideMenu orgID={params.orgID}/>
+                </div>
                 {children}
             </div>
         </>
