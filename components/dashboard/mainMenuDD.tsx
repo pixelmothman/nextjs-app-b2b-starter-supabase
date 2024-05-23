@@ -31,14 +31,6 @@ export default function MainMenuDD(){
                                 <svg className='fill-neutral-700 group-hover:fill-neutral-100' xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256"><path d="M230.93,220a8,8,0,0,1-6.93,4H32a8,8,0,0,1-6.92-12c15.23-26.33,38.7-45.21,66.09-54.16a72,72,0,1,1,73.66,0c27.39,8.95,50.86,27.83,66.09,54.16A8,8,0,0,1,230.93,220Z"></path></svg>
                             </div>
                         </DropdownMenu.Item>
-                        <DropdownMenu.Item onClick={() => router.push(`
-                        /dashboard/${path[2]}/settings/general
-                        `)} className="group relative flex flex-row gap-2 items-center justify-between h-6 py-4 my-2 text-xs font-semibold text-black select-none outline-none rounded-lg cursor-pointer">
-                            Organization Settings
-                            <div className='flex items-center justify-center w-6 h-6 border border-neutral-500 rounded-md group-hover:bg-neutral-900'>
-                                <svg className='fill-neutral-700 group-hover:fill-neutral-100' xmlns="http://www.w3.org/2000/svg" width="12" height="12"  viewBox="0 0 256 256"><path d="M224,120v96a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a15.87,15.87,0,0,1,4.69-11.32l80-80a16,16,0,0,1,22.62,0l80,80A15.87,15.87,0,0,1,224,120Z"></path></svg>
-                            </div>
-                        </DropdownMenu.Item>
                         <DropdownMenu.Separator className='h-[1px] my-4 bg-neutral-700 opacity-10' />
                         <DropdownMenu.Item onClick={() => {
                             supabase.auth.signOut()
