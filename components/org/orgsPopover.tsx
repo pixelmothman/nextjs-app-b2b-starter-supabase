@@ -4,7 +4,7 @@ import Link from 'next/link';
 import CreateOrgDialog from './createOrgDialog';
 import { usePathname } from 'next/navigation';
 
-export default function OrgsPopover({orgs}: {orgs: any}){
+export default function OrgsPopover({orgs, orgUserExclusivity}: {orgs: any, orgUserExclusivity: any}){
     const path = usePathname().split('/');
     return (
         <Popover.Root>
@@ -46,8 +46,15 @@ export default function OrgsPopover({orgs}: {orgs: any}){
                             )
                         })
                     }
-                    <div className='h-[1px] my-4 bg-neutral-700 opacity-10' />
-                    <CreateOrgDialog/>
+                    <div className={`h-[1px] ${orgUserExclusivity.orgUserExclusivity === false ? 'my-4' : 'mt-2'} bg-neutral-700 opacity-10`}/>
+                    {
+                        orgUserExclusivity.orgUserExclusivity === false ? (
+                            <CreateOrgDialog/>
+                        ) : (
+                            null
+                        )
+                    }
+
                 </Popover.Content>
             </Popover.Portal>
         </Popover.Root>

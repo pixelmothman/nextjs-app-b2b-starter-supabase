@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { Suspense, type ReactNode } from 'react';
-import { getOrgs } from '@/utils/data';
+import { getCurrentOrgUserPermissions, getOrgs } from '@/utils/data';
 import CurrentOrgIndicator from '@/components/org/currentOrgIndicator';
 import MainMenuDD from '@/components/dashboard/mainMenuDD';
 import OrgsPopover from '@/components/org/orgsPopover';
@@ -27,6 +27,13 @@ export default async function DashboardLayout( {children, params}: {children: Re
         redirect('/org/create');
     };
 
+    //
+    const orgUserExclusivity = await getCurrentOrgUserPermissions(params.orgID);
+    // Check if the response is an error
+    if ('error' in orgUserExclusivity) {
+        redirect(`/dashboard/${params.orgID}/error?error_message=${orgUserExclusivity.error.message}&error_code=${orgUserExclusivity.error.code}&error_details=${orgUserExclusivity.error.details}`)
+    };
+    
     return (
         <>
             <div className='w-full h-fit flex flex-row justify-between px-4 py-4 border-b border-neutral-300'>
@@ -39,7 +46,7 @@ export default async function DashboardLayout( {children, params}: {children: Re
                         <Suspense>
                             <CurrentOrgIndicator orgID={params.orgID}/>
                         </Suspense>
-                        <OrgsPopover orgs={isInOrg}/>
+                        <OrgsPopover orgs={isInOrg} orgUserExclusivity={orgUserExclusivity}/>
                     </div>
                 </div>
                 <MainMenuDD/>
