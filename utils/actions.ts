@@ -198,6 +198,115 @@ export async function createOrg(prevState: any, formData: FormData) {
 }
 
 
+// server action to change the organization name
+const EditOrgNameDataSchema = z.object({
+  orgID: z.string(),
+  orgName: z.string().min(3).max(40)
+})
+
+export async function editOrgName(prevState: any, formData: FormData){
+  try {
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+    const user = data.user;
+    
+    //get the data from the form
+    const dataFromForm = await validateFormData(formData, EditOrgNameDataSchema);
+
+    //delete previous instance of supabase client and start using supabase client with server role now
+    supabase = createSupaServerClient();
+
+    //check if the user belongs to the org
+    const checkIfUserIsPartOfOrg =  await isUserPartOfOrg(dataFromForm.orgID);
+    if(!checkIfUserIsPartOfOrg || !('isUserPartOfOrg' in checkIfUserIsPartOfOrg) || checkIfUserIsPartOfOrg.isUserPartOfOrg === false){
+      throw new LogicValidationError('User is not part of the org')
+    };
+
+    //check if the user calling this function has an owner role in the org
+    const checkIfUserHasOwnerRole =  await isUserOrgRole(dataFromForm.orgID, user.id, 'owner');
+    if(!checkIfUserHasOwnerRole || !('isUserOrgRole' in checkIfUserHasOwnerRole) || checkIfUserHasOwnerRole.isUserOrgRole === false){
+      throw new LogicValidationError('User does not have an owner role in the org')
+    };
+
+    //update the org name
+    const { error: updateOrgNameDataError } = await supabase.from('org_table').update({
+      org_name: dataFromForm.orgName
+    }).eq('org_id', dataFromForm.orgID);
+    if(updateOrgNameDataError){
+      throw new DBError('Failed to update the organization name')
+    };
+
+    revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/general`, 'page');
+    return {
+      success: true,
+      successID: uuidv4()
+    };
+
+  } catch(e: any) {
+    return handleError(e);
+  }
+};
+
+// server action to change the organization name
+const EditOrgUserSettingsDataSchema = z.object({
+  orgID: z.string(),
+  orgUserExclusivity: z.enum(['true', 'false'])
+})
+
+export async function editOrgUserSettings(prevState: any, formData: FormData){
+  try {
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+    const user = data.user;
+    
+    //get the data from the form
+    const dataFromForm = await validateFormData(formData, EditOrgUserSettingsDataSchema);
+
+    //delete previous instance of supabase client and start using supabase client with server role now
+    supabase = createSupaServerClient();
+
+    //check if the user belongs to the org
+    const checkIfUserIsPartOfOrg =  await isUserPartOfOrg(dataFromForm.orgID);
+    if(!checkIfUserIsPartOfOrg || !('isUserPartOfOrg' in checkIfUserIsPartOfOrg) || checkIfUserIsPartOfOrg.isUserPartOfOrg === false){
+      throw new LogicValidationError('User is not part of the org')
+    };
+
+    //check if the user calling this function has an owner role in the org
+    const checkIfUserHasOwnerRole =  await isUserOrgRole(dataFromForm.orgID, user.id, 'owner');
+    if(!checkIfUserHasOwnerRole || !('isUserOrgRole' in checkIfUserHasOwnerRole) || checkIfUserHasOwnerRole.isUserOrgRole === false){
+      throw new LogicValidationError('User does not have an owner role in the org')
+    };
+
+    //update the org user settings
+    const { error: updateOrgNameDataError } = await supabase.from('org_table').update({
+      org_user_exclusivity: dataFromForm.orgUserExclusivity
+    }).eq('org_id', dataFromForm.orgID);
+    if(updateOrgNameDataError){
+      throw new DBError('Failed to update the organization settings')
+    };
+
+    revalidatePath(`/dashboard/${dataFromForm.orgID}`, 'layout');
+    return {
+      success: true,
+      successID: uuidv4()
+    };
+
+  } catch(e: any) {
+    return handleError(e);
+  }
+};
+
+
 // server action to get the organization members
 const GetOrgMembersDataSchema = z.object({
   orgID: z.string()
