@@ -6,6 +6,8 @@ import { useFormState } from "react-dom";
 import { inviteUserToOrg } from '@/utils/actions';
 import FormButtonAbstraction from '../miscelaneous/formButtonAbstraction';
 import toast, { Toaster } from 'react-hot-toast';
+import { ErrorResponse } from '@/utils/errorHandler';
+import { ReturnInviteUserToOrgData } from '@/utils/interfacesForActions';
 
 export default function InvitePopover({orgID}: {orgID: string}){
     const [state, formAction] = useFormState(inviteUserToOrg, '')
@@ -14,12 +16,12 @@ export default function InvitePopover({orgID}: {orgID: string}){
 
     useEffect(() => {
         if (state?.success === false) {
-            toast.error(state.error.message + ' - ' + state.error.code)
+            toast.error((state as ErrorResponse).error.message + ' - ' + (state as ErrorResponse).error.code)
         }
         if(state?.success === true){
             toast.success('User invited successfully!')
         }
-    }, [state.success, state.error, state.successID]);
+    }, [state.success, (state as ErrorResponse).error, (state as ReturnInviteUserToOrgData).successID]);
 
     return (
         <>

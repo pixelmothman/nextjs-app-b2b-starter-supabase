@@ -8,6 +8,7 @@ import CurrentOrgIndicator from '@/components/org/currentOrgIndicator';
 import MainMenuDD from '@/components/dashboard/mainMenuDD';
 import OrgsPopover from '@/components/org/orgsPopover';
 import LeftSideMenu from '@/components/dashboard/leftSideMenu';
+import NotificationsPopoverProvider from '@/components/notifications/notificationsPopoverProvider';
 
 export default async function DashboardLayout( {children, params}: {children: ReactNode, params: {orgID: string}} ) {
     const supabase = createClient();
@@ -50,7 +51,10 @@ export default async function DashboardLayout( {children, params}: {children: Re
                         <OrgsPopover orgs={isInOrg} orgUserExclusivity={orgUserExclusivity}/>
                     </div>
                 </div>
-                <MainMenuDD/>
+                <div className='flex flex-row gap-2 items-center justify-center'>
+                    <NotificationsPopoverProvider/>
+                    <MainMenuDD/>
+                </div>
             </div>
             <div className="w-full h-full flex flex-row">
                 <div className='w-64 h-full p-4 bg-neutral-200 border-r border-neutral-300'>
