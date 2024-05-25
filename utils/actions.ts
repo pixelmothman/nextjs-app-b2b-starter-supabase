@@ -9,7 +9,8 @@ import { handleError } from './errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 import { createSupaServerClient } from './supabase/superServer';
 import { redirect } from 'next/navigation';
-import { isUserOnlyOwnerInOrg, isUserOrgRole, isUserPartOfOrg, isUserPartOfOrgByUserEmail, isUserRemovingThemselves } from './data';
+import { doUsersInOrgBelongToOtherOrgs, doesOrgHaveUserExclusivity, getOrgs, isUserInvitedToOrg, isUserOnlyOwnerInOrg, isUserOrgRole, isUserPartOfOrg, isUserPartOfOrgByUserEmail, isUserRemovingThemselves } from './data';
+import { ReturnEditOrgNameData, ReturnEditOrgUserSettingsData, OrgMembersReturnData, ReturnInviteUserToOrgData, ReturnEditUserRoleInOrgData,  ReturnRemoveUserFromOrgData} from '@/utils/interfacesForActions'
 
 //---------------------------------------------------------------------
 
@@ -38,15 +39,16 @@ const LoginDataSchema = z.object({
       if (error) {
         throw new AuthenticationError('Failed to log in');
       };
+
+      //revalidate the path and return
+      revalidatePath('/', 'layout');
+      return {
+        success: true,
+      };
     } catch (e: any) {
       return handleError(e);
-    }
-  
-    revalidatePath('/', 'layout');
-    return {
-      success: true,
     };
-  }
+  };
   
   // server action for signup
   const SignUpDataSchema = z.object({
@@ -72,15 +74,16 @@ const LoginDataSchema = z.object({
         console.log(error)
         throw new AuthenticationError('Failed to sign up');
       };
+
+      //revalidate the path and return
+      revalidatePath('/', 'layout');
+      return {
+        success: true,
+      };
     } catch (e: any) {
       return handleError(e);
-    }
-  
-    revalidatePath('/', 'layout');
-    return {
-      success: true,
     };
-  }
+  };
 //---------------------------------------------------------------------
 
 
@@ -118,15 +121,16 @@ export async function editAccountEmail(prevState: any, formData: FormData) {
     if (updateUserEmailError) {
       throw new DBError('Failed to update email')
     }
+
+    //revalidate the path and return
+    revalidatePath('/', 'layout');
+    return {
+      success: true,
+    };
   } catch (e: any) {
     return handleError(e);
-  }
-
-  revalidatePath('/', 'layout');
-  return {
-    success: true,
   };
-}
+};
 //---------------------------------------------------------------------
 
 
@@ -195,14 +199,14 @@ export async function createOrg(prevState: any, formData: FormData) {
     return handleError(e);
   }
   redirect(`/dashboard/${orgID}`);
-}
+};
 
 
 // server action to change the organization name
 const EditOrgNameDataSchema = z.object({
   orgID: z.string(),
   orgName: z.string().min(3).max(40)
-})
+});
 
 export async function editOrgName(prevState: any, formData: FormData){
   try {
@@ -241,22 +245,23 @@ export async function editOrgName(prevState: any, formData: FormData){
       throw new DBError('Failed to update the organization name')
     };
 
+    //revalidate the path and return
     revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/general`, 'page');
     return {
       success: true,
       successID: uuidv4()
-    };
-
+    } as ReturnEditOrgNameData;
   } catch(e: any) {
     return handleError(e);
-  }
+  };
 };
+
 
 // server action to change the organization name
 const EditOrgUserSettingsDataSchema = z.object({
   orgID: z.string(),
   orgUserExclusivity: z.enum(['true', 'false'])
-})
+});
 
 export async function editOrgUserSettings(prevState: any, formData: FormData){
   try {
@@ -287,6 +292,14 @@ export async function editOrgUserSettings(prevState: any, formData: FormData){
       throw new LogicValidationError('User does not have an owner role in the org')
     };
 
+    if(dataFromForm.orgUserExclusivity === 'true'){
+      //check that current users of the org do not belong to other orgs
+      const checkIfUsersInOrgBelongToOtherOrgs = await doUsersInOrgBelongToOtherOrgs(dataFromForm.orgID);
+      if(!checkIfUsersInOrgBelongToOtherOrgs || !Array.isArray(checkIfUsersInOrgBelongToOtherOrgs) || checkIfUsersInOrgBelongToOtherOrgs.length > 0){
+        throw new LogicValidationError('Users in the org belong to other orgs')
+      };
+    };
+
     //update the org user settings
     const { error: updateOrgNameDataError } = await supabase.from('org_table').update({
       org_user_exclusivity: dataFromForm.orgUserExclusivity
@@ -299,7 +312,7 @@ export async function editOrgUserSettings(prevState: any, formData: FormData){
     return {
       success: true,
       successID: uuidv4()
-    };
+    } as ReturnEditOrgUserSettingsData;
 
   } catch(e: any) {
     return handleError(e);
@@ -357,7 +370,7 @@ export async function getOrgMembers(prevState: any, formData: FormData){
       success: true,
       orgMembers: orgMembersData,
       successID: uuidv4()
-    }
+    } as OrgMembersReturnData;
   } catch(e: any) {
     return handleError(e);
   }
@@ -458,14 +471,15 @@ export async function inviteUserToOrg(prevState: any, formData: FormData){
           throw new DBError('Failed to add newly invited user to the org');
       };
     };
+
+    //revalidate the path and return
+    revalidatePath(`/dashboard/${dataFromForm.orgID}`, 'layout');
+    return {
+      success: true,
+      successID: uuidv4()
+    } as ReturnInviteUserToOrgData;
   } catch (e: any) {
     return handleError(e);
-  }
-
-  revalidatePath(`/dashboard/${dataFromForm.orgID}`, 'layout');
-  return {
-    success: true,
-    successID: uuidv4()
   };
 };
 
@@ -476,6 +490,7 @@ const UpdateUserRoleInOrgDataSchema = z.object({
   emailFromUserToUpdate: z.string().email(),
   newRole: z.enum(['owner', 'member'])
 });
+
 export async function editUserRoleInOrg(prevState: any, formData: FormData){
   let dataFromForm;
   try {
@@ -525,15 +540,16 @@ export async function editUserRoleInOrg(prevState: any, formData: FormData){
     if (updateUserRoleInOrgError) {
       throw new DBError('Failed to update user role in the org')
     };
+
+    //revalidate the path and return
+    revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/usermanagement`, 'layout');
+    return {
+      success: true,
+      successID: uuidv4()
+    } as ReturnEditUserRoleInOrgData;
   } catch (e: any) {
     return handleError(e);
   }
-
-  revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/usermanagement`, 'layout');
-  return {
-    success: true,
-    successID: uuidv4()
-  };
 };
 
 
@@ -542,6 +558,7 @@ const RemoveUserFromOrgDataSchema = z.object({
   orgID: z.string(),
   emailFromUserToRemove: z.string().email(),
 });
+
 export async function removeUserFromOrg(prevState: any, formData: FormData){
   let dataFromForm;
   try {
@@ -595,16 +612,17 @@ export async function removeUserFromOrg(prevState: any, formData: FormData){
     if (removeUserFromOrgError) {
       throw new DBError('Failed to remove user from the org')
     };
+
+    //revalidate the parh and return
+    revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/usermanagement`, 'layout');
+    return {
+      success: true,
+      successID: uuidv4()
+    } as ReturnRemoveUserFromOrgData;
   } catch (e: any) {
     return handleError(e);
-  }
-
-  revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/usermanagement`, 'layout');
-  return {
-    success: true,
-    successID: uuidv4()
   };
-}
+};
 //---------------------------------------------------------------------
 
 
