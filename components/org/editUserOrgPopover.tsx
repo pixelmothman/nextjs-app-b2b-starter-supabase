@@ -7,6 +7,9 @@ import { removeUserFromOrg, editUserRoleInOrg } from '@/utils/actions'
 import FormButtonAbstraction from '../miscelaneous/formButtonAbstraction';
 import toast, { Toaster } from 'react-hot-toast';
 import FormButtonShellAbstraction from '../miscelaneous/formButtonShellAbstraction';
+import { ErrorResponse } from '@/utils/errorHandler';
+import { ReturnEditUserRoleInOrgData, ReturnRemoveUserFromOrgData } from '@/utils/interfacesForActions';
+
 
 export default function EditUserOrgPopover({orgID, userEmail, userRoleInOrg}: {orgID: string, userEmail: string, userRoleInOrg: string}){
     const [state, formAction] = useFormState(editUserRoleInOrg, '')
@@ -15,22 +18,22 @@ export default function EditUserOrgPopover({orgID, userEmail, userRoleInOrg}: {o
 
     useEffect(() => {
         if (state?.success === false) {
-            toast.error(state.error.message + ' - ' + state.error.code)
+            toast.error((state as ErrorResponse).error.message + ' - ' + (state as ErrorResponse).error.code)
         };
         if(state?.success === true){
             
             toast.success('User updated successfully!');
         };
-    }, [state.success, state.error, state.successID]);
+    }, [state.success, (state as ErrorResponse).error, (state as ReturnEditUserRoleInOrgData).successID]);
 
     useEffect(() => {
         if (stateOne?.success === false) {
-            toast.error(stateOne.error.message + ' - ' + stateOne.error.code)
+            toast.error((stateOne as ErrorResponse).error.message + ' - ' + (stateOne as ErrorResponse).error.code)
         };
         if(stateOne?.success === true){
             toast.success('User removed successfully!');
         };
-    }, [stateOne.success, stateOne.error, stateOne.successID]);
+    }, [stateOne.success, (stateOne as ErrorResponse).error, (stateOne as ReturnRemoveUserFromOrgData).successID]);
 
     return (
         <>

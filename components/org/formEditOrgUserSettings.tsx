@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useFormState } from "react-dom";
 import { useEffect } from "react";
 import toast, { Toaster } from 'react-hot-toast';
+import { ErrorResponse } from "@/utils/errorHandler";
+import { ReturnEditOrgUserSettingsData } from "@/utils/interfacesForActions";
 
 export default function FormEditOrgUserSettings( {orgID, orgExclusivity}: {orgID: string, orgExclusivity: boolean} ) {
   const [state, formAction] = useFormState(editOrgUserSettings, '')
@@ -14,12 +16,12 @@ export default function FormEditOrgUserSettings( {orgID, orgExclusivity}: {orgID
 
   useEffect(() => {
     if (state.success === false) {
-      toast.error(state.error.message + ' - ' + state.error.code)
+      toast.error((state as ErrorResponse).error.message + ' - ' + (state as ErrorResponse).error.code)
     }
     if (state.success === true) {
       toast.success("The user exclusivity has been updated!");
     }
-  }, [state.success, state.error, state.successID]);
+  }, [state.success, (state as ErrorResponse).error, (state as ReturnEditOrgUserSettingsData).successID]);
 
   return (
     <form action={formAction} className='w-1/2 flex flex-col gap-4'>

@@ -15,7 +15,7 @@ export default function CreateOrgDialog(){
         if (state.success === false) {
         toast.error(state.error.message + ' - ' + state.error.code)
         }
-    }, [state.success, state.error, state.successID]);
+    }, [state.success, state.error]);
 
     return (
         <Dialog.Root>

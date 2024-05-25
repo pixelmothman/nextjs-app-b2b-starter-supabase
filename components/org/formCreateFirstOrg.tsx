@@ -15,7 +15,7 @@ export default function FormCreateFirstOrg() {
     if (state.success === false) {
       toast.error(state.error.message + ' - ' + state.error.code)
     }
-  }, [state.success, state.error, state.successID]);
+  }, [state.success, state.error]);
 
   return (
     <form action={formAction} className='w-full flex flex-col gap-4'>
