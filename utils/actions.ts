@@ -605,5 +605,105 @@ export async function removeUserFromOrg(prevState: any, formData: FormData){
     successID: uuidv4()
   };
 }
+//---------------------------------------------------------------------
 
+
+//---------------------------------------------------------------------
+
+// Server actions related to notifications
+
+// server action to accept an invitation to an organization
+const AcceptInvitationToOrgDataSchema = z.object({
+  orgID: z.string(),
+});
+export async function acceptInvitationToOrg(formData: FormData){
+  let orgID: string;
+  try {
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+
+    //get the data from the form
+    const dataFromForm = await validateFormData(formData, AcceptInvitationToOrgDataSchema);
+    const { orgID } = dataFromForm;
+    const userId = data.user.id;
+
+    supabase = createSupaServerClient();
+
+    const invitation = await isUserInvitedToOrg(orgID);
+    if (!(invitation as { isUserInvitedToOrg: boolean; }).isUserInvitedToOrg) {
+      throw new LogicValidationError('User has not been invited to the org');
+    }
+
+    const orgExclusivity = await doesOrgHaveUserExclusivity(orgID);
+    const userOrgs = await getOrgs();
+
+    if ('error' in userOrgs) {
+      throw new DBError('Failed to retrieve orgs');
+    };
+
+    if (userOrgs.length > 0) {
+      if (!orgExclusivity) {
+        for (const org of userOrgs) {
+          const isPart = await isUserPartOfOrg(org.org_id) as { isUserPartOfOrg: boolean; };
+          if (isPart?.isUserPartOfOrg) {
+            throw new LogicValidationError('User is part of another org');
+          }
+        }
+      } else {
+        throw new LogicValidationError('User is part of another org');
+      }
+    }
+
+    const { error: updateOrgMembershipError } = await supabase
+      .from('org_membership_table')
+      .update({ org_membership_status: 'confirmed' })
+      .eq('org_id', orgID)
+      .eq('user_id', userId);
+
+    if (updateOrgMembershipError) {
+      throw new DBError('Failed to update org membership');
+    };
+
+    revalidatePath('/dashboard', 'layout');
+    redirect(`/dashboard/${orgID}`);
+  } catch (e: any) {
+    return handleError(e);
+  };
+};
+
+// server action to reject an invitation to an organization
+const RejectInvitationToOrgDataSchema = z.object({
+  orgID: z.string(),
+});
+export async function rejectInvitationToOrg(formData: FormData){
+  try {
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+
+    //get the data from the form
+    const dataFromForm = await validateFormData(formData, RejectInvitationToOrgDataSchema);
+
+    //delete previous instance of supabase client and start using supabase client with server role now
+    supabase = createSupaServerClient();
+
+    //delete the user from the org_membership_table
+    const { error: deleteOrgMembershipTableDataError } = await supabase.from('org_membership_table').delete().eq('org_id', dataFromForm.orgID).eq('user_id', data.user.id);
+    if (deleteOrgMembershipTableDataError) {
+      throw new DBError('Failed to delete invitation from org membership');
+    };
+    revalidatePath('/dashboard', 'layout');
+  } catch (e: any) {
+    return handleError(e);
+  };
+};
 //---------------------------------------------------------------------
