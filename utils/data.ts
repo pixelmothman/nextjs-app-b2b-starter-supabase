@@ -444,7 +444,7 @@ export async function getCurrentOrgUserPermissions(orgId: string){
         };
         
         return {
-            orgUserExclusivity: orgMembershipData[0].org_user_permissions.org_user_exclusivity
+            orgUserExclusivity: (orgMembershipData[0] as any).org_user_permissions.org_user_exclusivity
         }
     } catch (e: any) {
         return handleError(e);
@@ -520,7 +520,7 @@ export async function doUsersInOrgBelongToOtherOrgs(orgID: string){
             if(orgMembershipData && orgMembershipData.length > 0){
                 usersBelongToOtherOrgs.push({
                     userID: orgMembersData[i].user_id,
-                    userEmail: orgMembersData[i].user_email.user_email
+                    userEmail: (orgMembersData[i] as any).user_email.user_email
                 });
             };
         };
@@ -656,7 +656,7 @@ export async function getOrgInvitationNotifications(){
             return (
                 {
                     id: orgMD.org_id,
-                    orgName: orgMD.org_name.org_name,
+                    orgName: (orgMD as any).org_name.org_name,
                     type: 'invitation',
                     invitedBy: (orgMD.invitedBy as any).user_email
                 }
