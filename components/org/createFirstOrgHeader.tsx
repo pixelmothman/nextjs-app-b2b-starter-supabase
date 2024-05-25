@@ -1,10 +1,7 @@
-import { createClient } from '@/utils/supabase/client';
 import NotificationsPopoverProvider from '../notifications/notificationsPopoverProvider';
 import FirstOrgMenuDD from './firstOrgMenuDD';
 
-
 export default async function CreateFirstOrgHeader(){
-    const supabase = createClient()
 
     return (
         <div className='w-full h-fit flex flex-row justify-between px-4 py-4 border-b border-neutral-300'>
