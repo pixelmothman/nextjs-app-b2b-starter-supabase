@@ -30,7 +30,7 @@ export async function getOrgs(){
         const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select(`
         org_id,
         org_name: org_table!org_membership_table_org_id_fkey (org_name)
-        `).eq('user_id', user.id)
+        `).eq('user_id', user.id).neq('org_membership_status', 'pending');
         if (orgMembershipDataError) {
             throw new DBError('Failed to check user membership data');
         };
@@ -218,6 +218,45 @@ export async function isUserPartOfOrgByUserEmail(orgID: string, userEmail:string
             userIDByEmail: userIsPartOfOrg.orgID,
             userStatus: userIsPartOfOrg.userStatus,
             userOrgRole: userIsPartOfOrg.orgRole
+        };
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+
+
+// server-side function to check if user calling this function is part of the org
+export async function isUserInvitedToOrg(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient()
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete prvious instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //check if the user belongs to the org
+        const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select('org_id').eq('user_id', user.id).eq('org_id', orgID).eq('org_membership_status', 'pending');
+        if (orgMembershipDataError) {
+            throw new DBError('Failed to fetch org membership data');
+        };
+
+        //if the user is not a member of any orgs, return
+        if(!orgMembershipData || orgMembershipData.length === 0){
+            return {
+                isUserInvitedToOrg: false
+            };
+        };
+
+        return {
+            isUserInvitedToOrg: true
         };
     } catch (e: any) {
         return handleError(e);
@@ -413,6 +452,86 @@ export async function getCurrentOrgUserPermissions(orgId: string){
 };
 
 
+export async function doesOrgHaveUserExclusivity(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient();
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //fetch the org members
+        const {data: orgData, error: orgDataError} = await supabase.from("org_table").select(`
+        org_user_exclusivity
+        `).eq('org_id', orgID);
+        if (orgDataError) {
+            throw new DBError('Failed to fetch org data');
+        };
+        
+        //if the org data is not found, return
+        if(!orgData || orgData.length === 0){
+            return new LogicValidationError('Org not found');
+        };
+        
+        return {
+            orgUserExclusivity: orgData[0].org_user_exclusivity
+        };
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+
+
+//
+export async function doUsersInOrgBelongToOtherOrgs(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient();
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //fetch the org members
+        const {data: orgMembersData, error: orgMembersDataError} = await supabase.from("org_membership_table").select(`
+        user_id,
+        user_email: user_table!org_membership_table_user_id_fkey (user_email)
+        `).eq('org_id', orgID);
+        if (orgMembersDataError) {
+            throw new DBError('Failed to fetch org members data');
+        };
+
+        //if the org members data is not found, return
+        if(!orgMembersData || orgMembersData.length === 0){
+            return new LogicValidationError('Org members not found');
+        };
+
+        //check if the users in the org belong to other orgs
+        let usersBelongToOtherOrgs: {userID: string, userEmail: string}[] = [];
+        for(let i=0; i < orgMembersData.length; i++){
+            let {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select(`
+            org_id
+            `).eq('user_id', orgMembersData[i].user_id).neq('org_id', orgID).eq('org_membership_status', 'confirmed');
+            if (orgMembershipDataError) {
+                throw new DBError('Failed to fetch org membership data');
+            };
+
+            if(orgMembershipData && orgMembershipData.length > 0){
+                usersBelongToOtherOrgs.push({
+                    userID: orgMembersData[i].user_id,
+                    userEmail: orgMembersData[i].user_email.user_email
+                });
+            };
+        };
+
+        return usersBelongToOtherOrgs;
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+
+
 // server side function to check the user is not trying to remove themselves if they are the only user in the trip 
 // or if the are the only confirmed user in the trip
 export async function isUserRemovingThemselves(orgID: string, userID: string){
@@ -469,6 +588,82 @@ export async function isUserRemovingThemselves(orgID: string, userID: string){
         };
 
         return false;
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+//---------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------
+// Server-side functions related to notifications
+
+// server side function to get all notifications for the user
+export async function getAllNotifications(){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let orgInvitationNotifications = await getOrgInvitationNotifications();
+
+        return {
+            orgInvitationNotifications,
+        };
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+
+
+// server-side function to get org invitations for the user
+interface OrgInvitationNotifications {
+    id: string;
+    type: string;
+    invitedBy: {email: string};
+};
+export async function getOrgInvitationNotifications(){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient()
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //fetch the trip invitations for the user
+        const {data: orgMembershipData, error: orgMembershipDataError} = await supabase.from("org_membership_table").select(`
+        org_id,
+        org_name: org_table!org_membership_table_org_id_fkey (org_name),
+        invitedBy: user_table!org_membership_table_invited_by_fkey (user_email)
+        `).eq('user_id', user.id).eq('org_membership_status', 'pending');
+        if (orgMembershipDataError) {
+            throw new DBError('Failed to fetch org membership data');
+        };
+        
+        //if the user is not a member of any org, return
+        if(!orgMembershipData || orgMembershipData.length === 0){
+            return [];
+        };
+
+        //transform the tripMembershipData into an array of trip_ids
+        const orgInvitationsNotifications: OrgInvitationNotifications[] = orgMembershipData.map((orgMD) => {
+            return (
+                {
+                    id: orgMD.org_id,
+                    orgName: orgMD.org_name.org_name,
+                    type: 'invitation',
+                    invitedBy: (orgMD.invitedBy as any).user_email
+                }
+            )
+        });
+        
+        return orgInvitationsNotifications;
     } catch (e: any) {
         return handleError(e);
     };
