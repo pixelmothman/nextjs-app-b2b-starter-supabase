@@ -75,8 +75,7 @@ export async function getCurrentOrgName(orgId: string){
         if(!orgMembershipData){
             return new LogicValidationError('User is not a member of the org');
         };
-        
-        return orgMembershipData.org_name[0];
+        return orgMembershipData.org_name;
     } catch (e: any) {
         return handleError(e);
     };
