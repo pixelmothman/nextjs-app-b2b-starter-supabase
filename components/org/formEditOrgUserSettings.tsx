@@ -29,7 +29,7 @@ export default function FormEditOrgUserSettings( {orgID, orgExclusivity}: {orgID
         <p className="text-sm font-medium text-neutral-900">Organization Users Settings</p>
         <div className="flex flex-row gap-2 items-center">
           <input type="hidden" name="orgID" value={orgID}/>
-          <label htmlFor="orgName">Users can only be part of this organization</label>
+          <label className="font-normal text-sm text-neutral-800" htmlFor="orgName">Users can only be part of this organization</label>
           <Switch.Root
             className="relative w-[40px] h-[24px] rounded-full border-2 border-neutral-400"
             id="orgName"
