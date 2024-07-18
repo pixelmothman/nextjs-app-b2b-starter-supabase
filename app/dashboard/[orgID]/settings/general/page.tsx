@@ -30,9 +30,9 @@ export default async function SettingsGeneralPage({params}: {params: {orgID: str
                     </>
                 ) : (
                     <div className='flex flex-col gap-2'>
-                        <span>Organization Name</span>
+                        <span className="font-medium text-sm text-neutral-800">Organization Name</span>
                         <div className="max-w-96 px-4 py-2 shadow-[inset_0px_0px_4px_1px_rgba(0,0,0,0,3)] shadow-neutral-200 rounded-md">
-                            <span className="font-medium text-sm text-neutral-800">
+                            <span className="font-neutral text-sm text-neutral-800">
                             {orgGeneralSettings.org_name}
                             </span>
                         </div>
