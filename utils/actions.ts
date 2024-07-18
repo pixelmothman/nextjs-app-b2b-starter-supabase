@@ -9,7 +9,7 @@ import { handleError } from './errorHandler';
 import { v4 as uuidv4 } from 'uuid';
 import { createSupaServerClient } from './supabase/superServer';
 import { redirect } from 'next/navigation';
-import { doUsersInOrgBelongToOtherOrgs, doesOrgHaveUserExclusivity, getOrgs, isUserInvitedToOrg, isUserOnlyOwnerInOrg, isUserOrgRole, isUserPartOfOrg, isUserPartOfOrgByUserEmail, isUserRemovingThemselves } from './data';
+import { addOrgToDBDeleteQueue, deleteOrgFromDeleteQueue, doUsersInOrgBelongToOtherOrgs, doesOrgHaveUserExclusivity, getOrgs, isUserInvitedToOrg, isUserOnlyOwnerInOrg, isUserOrgRole, isUserPartOfOrg, isUserPartOfOrgByUserEmail, isUserRemovingThemselves } from './data';
 import { ReturnEditOrgNameData, ReturnEditOrgUserSettingsData, OrgMembersReturnData, ReturnInviteUserToOrgData, ReturnEditUserRoleInOrgData,  ReturnRemoveUserFromOrgData} from '@/utils/interfacesForActions'
 
 //---------------------------------------------------------------------
@@ -720,6 +720,97 @@ export async function rejectInvitationToOrg(formData: FormData){
       throw new DBError('Failed to delete invitation from org membership');
     };
     revalidatePath('/dashboard', 'layout');
+  } catch (e: any) {
+    return handleError(e);
+  };
+};
+//---------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------
+
+// Server actions related to org deletion
+
+// server action to add an org to the delete queue
+const AddOrgToDeleteQueue = z.object({
+  orgID: z.string(),
+});
+export async function addOrgToDeleteQueue(formData: FormData){
+  let dataFromForm;
+  try {
+    //get the data from the form
+    dataFromForm = await validateFormData(formData, AddOrgToDeleteQueue);
+
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+
+    const user = data.user;
+
+    //check if the user calling this function belongs to the org
+    const checkIfUserIsPartOfOrg =  await isUserPartOfOrg(dataFromForm.orgID);
+    if(!checkIfUserIsPartOfOrg || !('isUserPartOfOrg' in checkIfUserIsPartOfOrg) || checkIfUserIsPartOfOrg.isUserPartOfOrg === false){
+      throw new LogicValidationError('User calling this function is not part of the org')
+    };
+
+    //check if the user calling this function has an owner role in the org
+    const checkIfUserHasOwnerRole =  await isUserOrgRole(dataFromForm.orgID, user.id, 'owner');
+    if(!checkIfUserHasOwnerRole || !('isUserOrgRole' in checkIfUserHasOwnerRole) || checkIfUserHasOwnerRole.isUserOrgRole === false){
+      throw new LogicValidationError('User does not have an owner role in the org')
+    };
+
+    //add the org to the delete queue
+    await addOrgToDBDeleteQueue(dataFromForm.orgID);
+
+    //revalidate the path and return
+    revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/orgdeletion`, 'page');
+  } catch (e: any) {
+    return handleError(e);
+  };
+};
+
+// server action for deleting an organization from the delete queue
+// server action to add an org to the delete queue
+const DeleteOrgFromDeleteQueue = z.object({
+  orgID: z.string(),
+});
+export async function delOrgFromDeleteQueue(formData: FormData){
+  let dataFromForm;
+  try {
+    //get the data from the form
+    dataFromForm = await validateFormData(formData, DeleteOrgFromDeleteQueue);
+
+    let supabase = createClient();
+
+    //check the user exists
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+        throw new AuthenticationError('User not found');
+    };
+
+    const user = data.user;
+
+    //check if the user calling this function belongs to the org
+    const checkIfUserIsPartOfOrg =  await isUserPartOfOrg(dataFromForm.orgID);
+    if(!checkIfUserIsPartOfOrg || !('isUserPartOfOrg' in checkIfUserIsPartOfOrg) || checkIfUserIsPartOfOrg.isUserPartOfOrg === false){
+      throw new LogicValidationError('User calling this function is not part of the org')
+    };
+
+    //check if the user calling this function has an owner role in the org
+    const checkIfUserHasOwnerRole =  await isUserOrgRole(dataFromForm.orgID, user.id, 'owner');
+    if(!checkIfUserHasOwnerRole || !('isUserOrgRole' in checkIfUserHasOwnerRole) || checkIfUserHasOwnerRole.isUserOrgRole === false){
+      throw new LogicValidationError('User does not have an owner role in the org')
+    };
+
+    // delete the org from the delete queue
+    await deleteOrgFromDeleteQueue(dataFromForm.orgID);
+
+    //revalidate the path and return
+    revalidatePath(`/dashboard/${dataFromForm.orgID}/settings/orgdeletion`, 'page');
   } catch (e: any) {
     return handleError(e);
   };

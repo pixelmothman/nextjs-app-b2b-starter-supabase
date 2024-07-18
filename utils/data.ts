@@ -668,3 +668,121 @@ export async function getOrgInvitationNotifications(){
     };
 };
 //---------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------
+// Server-side functions related to org deletion
+
+//---------------------------------------------------------------------
+// server-side function to insert into an org into a delete queue
+export async function addOrgToDBDeleteQueue(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient()
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //add the org to the delete queue
+        const { error: orgToDeleteError} = await supabase.from("org_to_delete_table").insert({org_id: orgID, triggered_by: user.id});
+        if (orgToDeleteError) {
+            throw new DBError('Failed to add org to delete queue');
+        };
+
+        return {
+            addedToQueue: true
+        };
+    } catch (error) {
+        console.error('DB Error: ', error);
+        throw new Error('Failed to fetch upload data')
+    };
+};
+//---------------------------------------------------------------------
+
+// server-side function to fetch if the org is in the delete queue
+export async function getIsOrgInDeleteQueue(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient()
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //fetch the org in the org_to_delete_table table
+        const {data: orgInDeleteQueue, error: orgInDeleteQueueError} = await supabase.from("org_to_delete_table").select('org_id, triggered_by').eq('org_id', orgID);
+
+        //if the org is in the table, it is in the delete queue
+        if(!orgInDeleteQueue || orgInDeleteQueue.length === 0) {
+            return {
+                isOrgInDeleteQueue: false
+            }
+        } else {
+            //fetch email of user who added the org to the delete queue
+            const {data: userWhoTriggeredOrgDelete, error: userWhoTriggeredOrgDeleteError} = await supabase.from("user_table").select('user_email').eq('user_id', orgInDeleteQueue[0].triggered_by);
+
+            if (!userWhoTriggeredOrgDelete){
+                return {
+                    isOrgInDeleteQueue: true,
+                    userWhoTriggeredOrgDeleteEmail: "unknown"
+                }
+            };
+
+            return {
+                isOrgInDeleteQueue: true,
+                userWhoTriggeredOrgDeleteEmail: userWhoTriggeredOrgDelete[0].user_email
+            };
+        };
+
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+//---------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------
+// server-side function to delete the org from the delete queue
+export async function deleteOrgFromDeleteQueue(orgID: string){
+    //prevents the response from being cached
+    noStore();
+    try {
+        let supabase = createClient()
+
+        //check the user exists
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user) {
+            throw new AuthenticationError('User not found');
+        };
+        const user = data.user
+
+        //delete previous instance of supabase client and start using supabase client with server role now
+        supabase = createSupaServerClient();
+
+        //fetch the org in the org_to_delete_table table
+        const {error: deleteOrgInDeleteQueueError} = await supabase.from("org_to_delete_table").delete().eq('org_id', orgID);
+
+        return {
+            success: true
+        }
+    } catch (e: any) {
+        return handleError(e);
+    };
+};
+//---------------------------------------------------------------------
