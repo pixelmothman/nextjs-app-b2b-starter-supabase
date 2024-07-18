@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 export default function OrgSettingsMenu(){
     const path = usePathname().split('/');
-    const settingsPages: string[]  = ["General", "User Management"];
+    const settingsPages: string[]  = ["General", "User Management", "Org Deletion"];
     
     return (
-        <div className="w-fit h-fit grid grid-cols-2 grid-rows-1 gap-2">
+        <div className="w-fit h-fit grid grid-cols-3 grid-rows-1 gap-2">
             {
                 settingsPages.map((page: string) => {
                     return (
